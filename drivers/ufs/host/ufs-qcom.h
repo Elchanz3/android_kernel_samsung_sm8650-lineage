@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /* Copyright (c) 2013-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef UFS_QCOM_H_
@@ -72,8 +72,8 @@ enum cpu_cluster_info {
 
 /* default value of auto suspend is 3 seconds */
 #define UFS_QCOM_AUTO_SUSPEND_DELAY	3000
-#define UFS_QCOM_CLK_GATING_DELAY_MS_PWR_SAVE	10
-#define UFS_QCOM_CLK_GATING_DELAY_MS_PERF	50
+#define UFS_QCOM_CLK_GATING_DELAY_MS_PWR_SAVE	4
+#define UFS_QCOM_CLK_GATING_DELAY_MS_PERF	12
 
 /* QCOM UFS host controller vendor specific registers */
 enum {
@@ -591,6 +591,7 @@ struct ufs_qcom_host {
 	struct ufs_vreg *vccq_shutdown;
 	bool work_pending;
 	bool bypass_g4_cfgready;
+	bool is_dt_pm_level_read;
 	u32 spm_lvl_prev;
 	bool set_ds_spm_level;
 	u32 ufs_pm_mode;
@@ -638,6 +639,7 @@ struct ufs_qcom_host {
 
 	bool broken_ahit_wa;
 	unsigned long active_cmds;
+	bool skip_flush;
 };
 
 static inline u32
