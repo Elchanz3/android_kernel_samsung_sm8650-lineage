@@ -906,7 +906,8 @@ int qcom_scm_pas_shutdown_retry(u32 peripheral)
 		msleep(pas_shutdown_retry_interval);
 		ret = qcom_scm_pas_shutdown(peripheral);
 	}
-	pr_err("PAS Shutdown: Attempting to shutdown peripheral %d time(s)\n", retry_num);
+	pr_err("PAS Shutdown: Attempting to shutdown peripheral %d(%d) time(s) with error: %d",
+		retry_num, pas_shutdown_retry_max, ret);
 
 	return ret;
 }
