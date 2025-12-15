@@ -1346,4 +1346,9 @@ config QCOM_KERNEL_BASED_RESTORE
 	  Requires hibernation support in the kernel.
 	  If not sure, say N.
 
+config SEC_CDSP_NO_CRASH_FOR_ENG
+	bool "crash trigger for USER/USERDEBUG only"
+	default n
+	help
+
 endmenu
