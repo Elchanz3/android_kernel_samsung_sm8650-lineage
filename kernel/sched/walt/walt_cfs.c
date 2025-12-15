@@ -334,6 +334,8 @@ static void walt_find_best_target(struct sched_domain *sd,
 	int packing_cpu, cpu;
 	unsigned int visited_cluster = 0;
 	unsigned int search_sibling_cluster = 0;
+	long most_spare_wake_cap_target_clusters = LONG_MIN;
+	int most_spare_cap_target_cluster_cpu = -1;
 
 	/* Find start CPU based on boost value */
 	start_cpu = fbt_env->start_cpu;
@@ -420,6 +422,18 @@ retry:
 			if (spare_wake_cap > most_spare_wake_cap) {
 				most_spare_wake_cap = spare_wake_cap;
 				most_spare_cap_cpu = i;
+			}
+
+			/*
+			 * Keep track of least loaded cpu which can be used as a
+			 * fallback placement core for BIG rtg task in case all
+			 * the cores are busy,  this is to avoid prev_cpu
+			 * fallback mechanism.
+			 */
+			if ((cluster <= end_index) &&
+				(spare_wake_cap > most_spare_wake_cap_target_clusters)) {
+				most_spare_wake_cap_target_clusters = spare_wake_cap;
+				most_spare_cap_target_cluster_cpu = i;
 			}
 
 			/*
@@ -551,6 +565,9 @@ retry:
 	if (unlikely(cpumask_empty(candidates))) {
 		if (most_spare_cap_cpu != -1)
 			cpumask_set_cpu(most_spare_cap_cpu, candidates);
+		else if (most_spare_cap_target_cluster_cpu != -1 && (order_index > 0) &&
+				fbt_env->is_rtg)
+			cpumask_set_cpu(most_spare_cap_target_cluster_cpu, candidates);
 		else if (cpu_active(prev_cpu)
 			 && (cpu_rq(prev_cpu)->nr_running < DIRE_STRAITS_PREV_NR_LIMIT))
 			cpumask_set_cpu(prev_cpu, candidates);
@@ -576,7 +593,7 @@ out:
 	trace_sched_find_best_target(p, min_task_util, start_cpu, cpumask_bits(candidates)[0],
 			     most_spare_cap_cpu, order_index, end_index,
 			     fbt_env->skip_cpu, task_on_rq_queued(p), least_nr_cpu,
-			     cpu_rq_runnable_cnt);
+			     cpu_rq_runnable_cnt, most_spare_cap_target_cluster_cpu);
 }
 
 static inline unsigned long
@@ -1097,6 +1114,7 @@ static void walt_binder_low_latency_set(void *unused, struct task_struct *task,
 		return;
 	if (task && ((task_in_related_thread_group(current) &&
 			task->group_leader->prio < MAX_RT_PRIO) ||
+			(walt_get_mvp_task_prio(current) == WALT_LL_PIPE_MVP) ||
 			(current->group_leader->prio < MAX_RT_PRIO &&
 			task_in_related_thread_group(task))))
 		wts->low_latency |= WALT_LOW_LATENCY_BINDER;
@@ -1111,7 +1129,6 @@ static void walt_binder_low_latency_set(void *unused, struct task_struct *task,
 		 * and the above condition to set flasg is nto satisfied.
 		 */
 		wts->low_latency &= ~WALT_LOW_LATENCY_BINDER;
-
 }
 
 static void binder_set_priority_hook(void *data,
