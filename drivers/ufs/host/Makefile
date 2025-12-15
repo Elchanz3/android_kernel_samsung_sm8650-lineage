@@ -9,6 +9,7 @@ ufs_qcom-y += ufs-qcom.o
 ufs_qcom_scmi-y += ufs-qcom-scmi.o
 ufs_qcom-$(CONFIG_SCSI_UFS_CRYPTO) += ufs-qcom-ice.o
 ufs_qcom_scmi-$(CONFIG_SCSI_UFS_CRYPTO) += ufs-qcom-ice.o
+ufs_qcom-$(CONFIG_SEC_UFS_FEATURE) += ufs-sec-feature.o ufs-sec-sysfs.o
 obj-$(CONFIG_SCSI_UFS_EXYNOS) += ufs-exynos.o
 obj-$(CONFIG_SCSI_UFSHCD_PCI) += ufshcd-pci.o
 obj-$(CONFIG_SCSI_UFSHCD_PLATFORM) += ufshcd-pltfrm.o
