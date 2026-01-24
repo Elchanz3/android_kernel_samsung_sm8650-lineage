@@ -269,8 +269,6 @@ source "drivers/usb/common/vbus_notifier/Kconfig"
 
 source "drivers/input/sec_input/Kconfig"
 
-source "drivers/net/dropdump/Kconfig"
-
 source "drivers/regulator/s2dos05/Kconfig"
 
 source "drivers/input/sec_input/stm_spi/Kconfig"
@@ -282,8 +280,6 @@ source "drivers/mfd/maxim/Kconfig"
 source "drivers/vibrator/common/vib_info/Kconfig"
 
 source "drivers/sti/common/Kconfig"
-
-source "drivers/kperfmon/Kconfig"
 
 source "drivers/vibrator/common/inputff/Kconfig"
 
