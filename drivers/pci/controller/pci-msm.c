@@ -12344,59 +12344,59 @@ static int __init pcie_init(void)
 	for (i = 0; i < MAX_RC_NUM; i++) {
 #ifndef CONFIG_SEC_PCIE
 		scnprintf(rc_name, MAX_RC_NAME_LEN, "pcie%d-short", i);
-		msm_pcie_dev[i].ipc_log =
+		msm_pcie_dev[i]->ipc_log =
 			ipc_log_context_create(PCIE_LOG_PAGES, rc_name, 0);
-		if (msm_pcie_dev[i].ipc_log == NULL)
+		if (msm_pcie_dev[i]->ipc_log == NULL)
 			pr_err("%s: unable to create IPC log context for %s\n",
 				__func__, rc_name);
 		else
-			PCIE_DBG(&msm_pcie_dev[i],
+			PCIE_DBG(msm_pcie_dev[i],
 				"PCIe IPC logging is enable for RC%d\n",
 				i);
 		scnprintf(rc_name, MAX_RC_NAME_LEN, "pcie%d-long", i);
-		msm_pcie_dev[i].ipc_log_long =
+		msm_pcie_dev[i]->ipc_log_long =
 			ipc_log_context_create(PCIE_LOG_PAGES, rc_name, 0);
-		if (msm_pcie_dev[i].ipc_log_long == NULL)
+		if (msm_pcie_dev[i]->ipc_log_long == NULL)
 			pr_err("%s: unable to create IPC log context for %s\n",
 				__func__, rc_name);
 		else
-			PCIE_DBG(&msm_pcie_dev[i],
+			PCIE_DBG(msm_pcie_dev[i],
 				"PCIe IPC logging %s is enable for RC%d\n",
 				rc_name, i);
 		scnprintf(rc_name, MAX_RC_NAME_LEN, "pcie%d-dump", i);
-		msm_pcie_dev[i].ipc_log_dump =
+		msm_pcie_dev[i]->ipc_log_dump =
 			ipc_log_context_create(PCIE_LOG_PAGES, rc_name, 0);
-		if (msm_pcie_dev[i].ipc_log_dump == NULL)
+		if (msm_pcie_dev[i]->ipc_log_dump == NULL)
 			pr_err("%s: unable to create IPC log context for %s\n",
 				__func__, rc_name);
 		else
-			PCIE_DBG(&msm_pcie_dev[i],
+			PCIE_DBG(msm_pcie_dev[i],
 				"PCIe IPC logging %s is enable for RC%d\n",
 				rc_name, i);
 #endif
-		spin_lock_init(&msm_pcie_dev[i].cfg_lock);
-		spin_lock_init(&msm_pcie_dev[i].evt_reg_list_lock);
-		msm_pcie_dev[i].cfg_access = true;
-		mutex_init(&msm_pcie_dev[i].enumerate_lock);
-		mutex_init(&msm_pcie_dev[i].setup_lock);
-		mutex_init(&msm_pcie_dev[i].recovery_lock);
-		mutex_init(&msm_pcie_dev[i].aspm_lock);
-		mutex_init(&msm_pcie_dev[i].drv_pc_lock);
-		spin_lock_init(&msm_pcie_dev[i].irq_lock);
-		msm_pcie_dev[i].drv_ready = false;
-		msm_pcie_dev[i].l23_rdy_poll_timeout = L23_READY_POLL_TIMEOUT;
-		INIT_WORK(&msm_pcie_dev[i].drv_disable_pc_work,
+		spin_lock_init(&msm_pcie_dev[i]->cfg_lock);
+		spin_lock_init(&msm_pcie_dev[i]->evt_reg_list_lock);
+		msm_pcie_dev[i]->cfg_access = true;
+		mutex_init(&msm_pcie_dev[i]->enumerate_lock);
+		mutex_init(&msm_pcie_dev[i]->setup_lock);
+		mutex_init(&msm_pcie_dev[i]->recovery_lock);
+		mutex_init(&msm_pcie_dev[i]->aspm_lock);
+		mutex_init(&msm_pcie_dev[i]->drv_pc_lock);
+		spin_lock_init(&msm_pcie_dev[i]->irq_lock);
+		msm_pcie_dev[i]->drv_ready = false;
+		msm_pcie_dev[i]->l23_rdy_poll_timeout = L23_READY_POLL_TIMEOUT;
+		INIT_WORK(&msm_pcie_dev[i]->drv_disable_pc_work,
 				msm_pcie_drv_disable_pc);
-		INIT_WORK(&msm_pcie_dev[i].drv_enable_pc_work,
+		INIT_WORK(&msm_pcie_dev[i]->drv_enable_pc_work,
 				msm_pcie_drv_enable_pc);
-		INIT_LIST_HEAD(&msm_pcie_dev[i].enum_ep_list);
-		INIT_LIST_HEAD(&msm_pcie_dev[i].susp_ep_list);
-		INIT_LIST_HEAD(&msm_pcie_dev[i].event_reg_list);
+		INIT_LIST_HEAD(&msm_pcie_dev[i]->enum_ep_list);
+		INIT_LIST_HEAD(&msm_pcie_dev[i]->susp_ep_list);
+		INIT_LIST_HEAD(&msm_pcie_dev[i]->event_reg_list);
 #ifdef CONFIG_SEC_PCIE_L1SS
-		mutex_init(&msm_pcie_dev[i].l1ss_ctrl_lock);
-		msm_pcie_dev[i].l1ss_disable_flag = 0;
-		msm_pcie_dev[i].pending_l1ss_ctrl = false;
-		msm_pcie_dev[i].ep_config_accessible = false;
+		mutex_init(&msm_pcie_dev[i]->l1ss_ctrl_lock);
+		msm_pcie_dev[i]->l1ss_disable_flag = 0;
+		msm_pcie_dev[i]->pending_l1ss_ctrl = false;
+		msm_pcie_dev[i]->ep_config_accessible = false;
 #endif
 
 		msm_pcie_dev[i] = NULL;
