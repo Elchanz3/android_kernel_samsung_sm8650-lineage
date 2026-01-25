@@ -1388,8 +1388,12 @@ void gserial_disconnect(struct gserial *gser)
 	struct gs_port	*port = gser->ioport;
 	unsigned long	flags;
 
-	if (!port)
+	pr_info("%s +++ \n", __func__);
+
+	if (!port) {
+		pr_err("%s: port is NULL\n", __func__);
 		return;
+	}
 
 	spin_lock_irqsave(&serial_port_lock, flags);
 
