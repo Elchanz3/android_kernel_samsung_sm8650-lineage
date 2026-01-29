@@ -83,6 +83,7 @@ config QCOM_DMABUF_HEAPS_CMA
 config QCOM_DMABUF_HEAPS_CARVEOUT
 	bool "QCOM dma-buf Carveout Heap"
 	depends on QCOM_DMABUF_HEAPS
+	depends on ARCH_SPARSEMEM_ENABLE
 	help
 	  Choose this option to build the QCOM DMA-BUF Carveout heap.
 	  If in doubt, say Y here.
@@ -126,3 +127,11 @@ config QCOM_DMABUF_HEAPS_SYSTEM_MOVABLE
 	  lend memory from the movable zone.
 	  If in doubt, say N here.
 
+config RBIN
+	bool "DMA-BUF RBIN Samsung Heap"
+	depends on DMABUF_HEAPS && CLEANCACHE
+	default m
+	help
+	  Choose this option to enable dma-buf rbin heap for samsung.
+	  This heap supports both dmabuf allocation for camera and
+	  operations for cleancache backend.
