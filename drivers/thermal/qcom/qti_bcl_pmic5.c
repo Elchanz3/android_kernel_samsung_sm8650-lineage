@@ -681,6 +681,9 @@ bpm_exit:
 	return ret;
 }
 
+static int panic_lvl = BCL_TYPE_MAX;
+module_param(panic_lvl, int, 0644);
+
 static irqreturn_t bcl_handle_irq(int irq, void *data)
 {
 	struct bcl_peripheral_data *perph_data =
@@ -715,10 +718,17 @@ static irqreturn_t bcl_handle_irq(int irq, void *data)
 		thermal_zone_device_update(perph_data->tz_dev,
 				THERMAL_TRIP_VIOLATED);
 		end_ts = sched_clock();
-		pr_debug(
+		pr_info(
 		"Irq:%d triggered for bcl type:%s. status:%u ibat=%d vbat=%d.\n",
 			irq, bcl_int_names[perph_data->type],
 			irq_status, ibat, vbat);
+
+		/* trigger panic on given panic level */
+		if (perph_data->type >= BCL_LVL0 && perph_data->type <= BCL_LVL2
+			&& perph_data->type == BCL_LVL0 + panic_lvl) {
+			panic("bcl type:%s forced panic", bcl_int_names[perph_data->type]);
+		}
+
 		BCL_IPC(bcl_perph,
 		"Irq:%d triggered for bcl type:%s. status:%u ibat=%d vbat=%d\n",
 			irq, bcl_int_names[perph_data->type],

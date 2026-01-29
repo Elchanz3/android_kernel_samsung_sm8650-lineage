@@ -16,9 +16,12 @@
 #include <linux/net.h>
 
 #include "thermal_mitigation_device_service_v01.h"
+#include <linux/soc/qcom/sysmon_subsystem_stats.h>
 
-#define QMI_CDEV_DRIVER		"qmi-cooling-device"
+#define QMI_SS_CDEV_DRIVER		"qmi-ss-cooling-device"
 #define QMI_TMD_RESP_TOUT	msecs_to_jiffies(100)
+
+extern struct sysmon_smem_stats g_sysmon_stats;
 
 struct qmi_cooling_device {
 	struct device_node		*np;
@@ -43,81 +46,10 @@ struct qmi_tmd_instance {
 
 static struct qmi_tmd_instance *tmd_instances;
 static int tmd_inst_cnt;
+static struct qmi_cooling_device *qmi_cdev_ss;
 
 static char  device_clients[][QMI_TMD_MITIGATION_DEV_ID_LENGTH_MAX_V01] = {
-	{"pa"},
-	{"pa_fr1"},
-	{"cx_vdd_limit"},
-	{"modem"},
-	{"modem_current"},
-	{"modem_skin"},
-	{"modem_bw"},
-	{"modem_bw_backoff"},
-	{"vbatt_low"},
-	{"charge_state"},
-	{"mmw0"},
-	{"mmw1"},
-	{"mmw2"},
-	{"mmw3"},
-	{"mmw_skin0"},
-	{"mmw_skin1"},
-	{"mmw_skin2"},
-	{"mmw_skin3"},
-	{"wlan"},
-	{"wlan_bw"},
-	{"mmw_skin0_dsc"},
-	{"mmw_skin1_dsc"},
-	{"mmw_skin2_dsc"},
-	{"mmw_skin3_dsc"},
-	{"modem_skin_lte_dsc"},
-	{"modem_skin_nr_dsc"},
-	{"pa_dsc"},
-	{"pa_fr1_dsc"},
 	{"cdsp_sw"},
-	{"cdsp_sw_hvx"},
-	{"cdsp_sw_hmx"},
-	{"cdsp_hw"},
-	{"cpuv_restriction_cold"},
-	{"cpr_cold"},
-	{"modem_lte_dsc"},
-	{"modem_nr_dsc"},
-	{"modem_nr_scg_dsc"},
-	{"sdr0_lte_dsc"},
-	{"sdr1_lte_dsc"},
-	{"sdr0_nr_dsc"},
-	{"sdr1_nr_dsc"},
-	{"sdr0_nr_scg_dsc"},
-	{"sdr1_nr_scg_dsc"},
-	{"pa_lte_sdr0_dsc"},
-	{"pa_lte_sdr1_dsc"},
-	{"pa_nr_sdr0_dsc"},
-	{"pa_nr_sdr1_dsc"},
-	{"pa_nr_sdr0_scg_dsc"},
-	{"pa_nr_sdr1_scg_dsc"},
-	{"mmw0_dsc"},
-	{"mmw1_dsc"},
-	{"mmw2_dsc"},
-	{"mmw3_dsc"},
-	{"mmw_ific_dsc"},
-	{"modem_lte_sub1_dsc"},
-	{"modem_nr_sub1_dsc"},
-	{"modem_nr_scg_sub1_dsc"},
-	{"sdr0_lte_sub1_dsc"},
-	{"sdr1_lte_sub1_dsc"},
-	{"sdr0_nr_sub1_dsc"},
-	{"sdr1_nr_sub1_dsc"},
-	{"pa_lte_sdr0_sub1_dsc"},
-	{"pa_lte_sdr1_sub1_dsc"},
-	{"pa_nr_sdr0_sub1_dsc"},
-	{"pa_nr_sdr1_sub1_dsc"},
-	{"pa_nr_sdr0_scg_sub1_dsc"},
-	{"pa_nr_sdr1_scg_sub1_dsc"},
-	{"mmw0_sub1_dsc"},
-	{"mmw1_sub1_dsc"},
-	{"mmw2_sub1_dsc"},
-	{"mmw3_sub1_dsc"},
-	{"mmw_ific_sub1_dsc"},
-	{"bcl"},
 };
 
 static int qmi_get_max_state(struct thermal_cooling_device *cdev,
@@ -238,6 +170,191 @@ static struct thermal_cooling_device_ops qmi_device_ops = {
 	.get_max_state = qmi_get_max_state,
 	.get_cur_state = qmi_get_cur_state,
 	.set_cur_state = qmi_set_cur_state,
+};
+
+static ssize_t get_cur_state_show(struct class *class,
+			struct class_attribute *attr,
+			char *buf)
+{
+	struct qmi_cooling_device *qmi_cdev;
+	int i, state = 0;
+
+	if (!qmi_cdev_ss) {
+		for (i = 0; i < tmd_inst_cnt; i++) {
+			struct qmi_tmd_instance *tmd = &tmd_instances[i];
+
+			if (list_empty(&tmd->tmd_cdev_list))
+				continue;
+
+			list_for_each_entry(qmi_cdev, &tmd->tmd_cdev_list, qmi_node) {
+				if (!qmi_cdev)
+					printk("qmi_cur_state_show error");
+
+				if (!strcmp(qmi_cdev->cdev_name, "cdsp_ss")) {
+					qmi_cdev_ss = qmi_cdev;
+					state = qmi_cdev->mtgn_state;
+					i = tmd_inst_cnt;
+					break;
+				}
+			}
+		}
+	} else {
+		state = qmi_cdev_ss->mtgn_state;
+	}
+
+	return scnprintf(buf, 10, "%d\n", state);
+}
+
+static ssize_t set_cur_state_store(struct class *class,
+			struct class_attribute *attr,
+			const char *buf, size_t len)
+{
+	struct qmi_cooling_device *qmi_cdev;
+	int state = simple_strtol(buf, NULL, 10);
+	int ret = 0, i = 0;
+
+	if (!qmi_cdev_ss) {
+		for (i = 0; i < tmd_inst_cnt; i++) {
+			struct qmi_tmd_instance *tmd = &tmd_instances[i];
+
+			if (list_empty(&tmd->tmd_cdev_list))
+				continue;
+
+			list_for_each_entry(qmi_cdev, &tmd->tmd_cdev_list, qmi_node) {
+				if (!qmi_cdev)
+					printk("qmi_cur_state_store error");
+
+				if (!strcmp(qmi_cdev->cdev_name, "cdsp_ss")) {
+					qmi_cdev_ss = qmi_cdev;
+					i = tmd_inst_cnt;
+					break;
+				}
+			}
+		}
+	}
+
+	if (!qmi_cdev_ss)
+		return -EINVAL;
+
+	if (state > qmi_cdev_ss->max_level) {
+		return -EINVAL;
+	}
+
+	if (qmi_cdev_ss->mtgn_state == state)
+		return len;
+
+	/* save it and return if server exit */
+	if (!qmi_cdev_ss->connection_active) {
+		qmi_cdev_ss->mtgn_state = state;
+		pr_debug("Pending request:%d for %s\n", state,
+				qmi_cdev_ss->cdev_name);
+		return len;
+	}
+
+	/* It is best effort to save state even if QMI fail */
+	ret = qmi_tmd_send_state_request(qmi_cdev_ss, (uint8_t)state);
+	qmi_cdev_ss->mtgn_state = state;
+
+	return len;
+}
+
+static ssize_t state_list_show(struct class *class,
+			struct class_attribute *attr,
+			char *buf)
+{
+	struct qmi_cooling_device *qmi_cdev;
+	int i, j, max = 0;
+	char list[20] = {0, };
+
+	if (!qmi_cdev_ss) {
+		for (i = 0; i < tmd_inst_cnt; i++) {
+			struct qmi_tmd_instance *tmd = &tmd_instances[i];
+
+			if (list_empty(&tmd->tmd_cdev_list))
+				continue;
+
+			list_for_each_entry(qmi_cdev, &tmd->tmd_cdev_list, qmi_node) {
+				if (!qmi_cdev)
+					printk("qmi_cur_state_show error");
+
+				if (!strcmp(qmi_cdev->cdev_name, "cdsp_ss")) {
+					qmi_cdev_ss = qmi_cdev;
+					max = qmi_cdev->max_level;
+					i = tmd_inst_cnt;
+					break;
+				}
+			}
+		}
+	} else {
+		max = qmi_cdev_ss->max_level;
+	}
+
+    for (i = 0, j = 0; i <= max; i++, j+=2) {
+        list[j] = '0' + i;
+        list[j + 1] = ' ';
+    }
+	
+	return scnprintf(buf, 20, "%s\n", list);
+}
+
+extern void show_cdsp_clock(char *buf, int len);
+static ssize_t clock_show(struct class *class,
+			struct class_attribute *attr,
+			char *buf)
+{
+	char list[30] = {0, };
+	show_cdsp_clock(list, sizeof(list));
+	return scnprintf(buf, sizeof(list), "%s\n", list);
+}
+
+extern void show_cdsp_table(char *buf);
+static ssize_t clock_table_show(struct class *class,
+			struct class_attribute *attr,
+			char *buf)
+{
+	char list[100] = {0, };
+	show_cdsp_table(list);
+	return scnprintf(buf, sizeof(list), "%s\n", list);
+}
+
+extern void show_time_in_state(char *buf);
+static ssize_t time_in_state_show(struct class *class,
+			struct class_attribute *attr,
+			char *buf)
+{
+	char list[500] = {0, };
+	show_time_in_state(list);
+	return scnprintf(buf, sizeof(list), "%s\n", list);
+}
+
+static struct class_attribute class_attr_state_list =
+	__ATTR(state_list, 0444, state_list_show, NULL);
+
+static struct class_attribute class_attr_set_cur_state =
+	__ATTR(cur_state, 0644, get_cur_state_show, set_cur_state_store);
+
+static struct class_attribute class_attr_clock =
+	__ATTR(npu_clock, 0444, clock_show, NULL);
+
+static struct class_attribute class_attr_clock_table =
+	__ATTR(npu_clock_table, 0444, clock_table_show, NULL);
+
+static struct class_attribute class_attr_time_in_state =
+	__ATTR(time_in_state, 0444, time_in_state_show, NULL);
+
+static struct attribute *npu_state_class_attrs[] = {
+	&class_attr_state_list.attr,
+	&class_attr_set_cur_state.attr,
+	&class_attr_clock.attr,
+	&class_attr_clock_table.attr,
+	&class_attr_time_in_state.attr,
+	NULL,
+};
+ATTRIBUTE_GROUPS(npu_state_class);
+
+static struct class npu_state_class = {
+	.name		= "npu_state",
+	.class_groups	= npu_state_class_groups,
 };
 
 static int qmi_register_cooling_device(struct qmi_cooling_device *qmi_cdev)
@@ -542,7 +659,7 @@ data_subsys_error:
 	return ret;
 }
 
-static int qmi_device_probe(struct platform_device *pdev)
+static int qmi_ss_device_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	int ret = 0, idx = 0;
@@ -581,6 +698,12 @@ static int qmi_device_probe(struct platform_device *pdev)
 		}
 	}
 
+	ret = class_register(&npu_state_class);
+	if (ret) {
+		pr_err("Unable to register npu_state class\n");
+		return ret;
+	}
+
 	return 0;
 
 probe_err:
@@ -588,38 +711,38 @@ probe_err:
 	return ret;
 }
 
-static int qmi_device_remove(struct platform_device *pdev)
+static int qmi_ss_device_remove(struct platform_device *pdev)
 {
 	qmi_tmd_cleanup();
 
 	return 0;
 }
 
-static const struct of_device_id qmi_device_match[] = {
-	{.compatible = "qcom,qmi-cooling-devices"},
+static const struct of_device_id qmi_ss_device_match[] = {
+	{.compatible = "qcom,qmi-ss-cooling-devices"},
 	{}
 };
 
-static struct platform_driver qmi_device_driver = {
-	.probe          = qmi_device_probe,
-	.remove         = qmi_device_remove,
+static struct platform_driver qmi_ss_device_driver = {
+	.probe          = qmi_ss_device_probe,
+	.remove         = qmi_ss_device_remove,
 	.driver         = {
-		.name   = QMI_CDEV_DRIVER,
-		.of_match_table = qmi_device_match,
+		.name   = QMI_SS_CDEV_DRIVER,
+		.of_match_table = qmi_ss_device_match,
 	},
 };
 
-static int __init qmi_device_init(void)
+static int __init qmi_ss_device_init(void)
 {
-	return platform_driver_register(&qmi_device_driver);
+	return platform_driver_register(&qmi_ss_device_driver);
 }
-module_init(qmi_device_init);
+module_init(qmi_ss_device_init);
 
-static void __exit qmi_device_exit(void)
+static void __exit qmi_ss_device_exit(void)
 {
-	platform_driver_unregister(&qmi_device_driver);
+	platform_driver_unregister(&qmi_ss_device_driver);
 }
-module_exit(qmi_device_exit);
+module_exit(qmi_ss_device_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("QTI QMI cooling device driver");
