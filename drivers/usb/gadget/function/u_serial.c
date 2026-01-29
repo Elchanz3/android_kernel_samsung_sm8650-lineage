@@ -385,7 +385,7 @@ static void gs_rx_push(struct work_struct *work)
 
 		default:
 			/* presumably a transient fault */
-			pr_warn("ttyGS%d: unexpected RX status %d\n",
+			pr_debug("ttyGS%d: unexpected RX status %d\n",
 				port->port_num, req->status);
 			fallthrough;
 		case 0:
@@ -629,7 +629,7 @@ static int gs_open(struct tty_struct *tty, struct file *file)
 		status = kfifo_alloc(&port->port_write_buf,
 				     WRITE_BUF_SIZE, GFP_KERNEL);
 		if (status) {
-			pr_debug("gs_open: ttyGS%d (%p,%p) no buffer\n",
+			pr_info("gs_open: ttyGS%d (%p,%p) no buffer\n",
 				 port_num, tty, file);
 			goto out;
 		}
@@ -650,18 +650,18 @@ static int gs_open(struct tty_struct *tty, struct file *file)
 		if (!port->suspended) {
 			struct gserial	*gser = port->port_usb;
 
-			pr_debug("gs_open: start ttyGS%d\n", port->port_num);
+			pr_info("gs_open: start ttyGS%d\n", port->port_num);
 			gs_start_io(port);
 
 			if (gser->connect)
 				gser->connect(gser);
 		} else {
-			pr_debug("delay start of ttyGS%d\n", port->port_num);
+			pr_info("delay start of ttyGS%d\n", port->port_num);
 			port->start_delayed = true;
 		}
 	}
 
-	pr_debug("gs_open: ttyGS%d (%p,%p)\n", port->port_num, tty, file);
+	pr_info("gs_open: ttyGS%d (%p,%p)\n", port->port_num, tty, file);
 
 exit_unlock_port:
 	spin_unlock_irq(&port->port_lock);
@@ -1315,6 +1315,8 @@ int gserial_connect(struct gserial *gser, u8 port_num)
 	unsigned long	flags;
 	int		status;
 
+	pr_info("%s +++\n", __func__);
+
 	if (port_num >= MAX_U_SERIAL_PORTS)
 		return -ENXIO;
 
@@ -1355,7 +1357,7 @@ int gserial_connect(struct gserial *gser, u8 port_num)
 	 * protocol about open/close status (connect/disconnect).
 	 */
 	if (port->port.count) {
-		pr_debug("gserial_connect: start ttyGS%d\n", port->port_num);
+		pr_info("gserial_connect: start ttyGS%d\n", port->port_num);
 		gs_start_io(port);
 		if (gser->connect)
 			gser->connect(gser);
@@ -1390,8 +1392,12 @@ void gserial_disconnect(struct gserial *gser)
 	struct gs_port	*port = gser->ioport;
 	unsigned long	flags;
 
-	if (!port)
+	pr_info("%s +++ \n", __func__);
+
+	if (!port) {
+		pr_err("%s: port is NULL\n", __func__);
 		return;
+	}
 
 	spin_lock_irqsave(&serial_port_lock, flags);
 
@@ -1442,6 +1448,7 @@ void gserial_suspend(struct gserial *gser)
 	port = gser->ioport;
 
 	if (!port) {
+		pr_err("%s: port is NULL\n", __func__);
 		spin_unlock_irqrestore(&serial_port_lock, flags);
 		return;
 	}
