@@ -50,6 +50,11 @@
 #include <linux/vibrator/sec_vibrator_inputff.h>
 #endif
 
+#ifndef __visible_for_testing
+#define __visible_for_testing static
+#endif
+
+
 #define CS40L26_LASTREG					0x3C7DFE8
 
 #define CS40L26_DEVID					0x0
