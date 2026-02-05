@@ -229,6 +229,7 @@ obj-y += battery/wireless/
 obj-y += nfc/nxp_combined/
 obj-y += regulator/s2mpb02/
 obj-y += uwb/
+obj-y += sdp/
 obj-y += regulator/s2dos07/
 obj-y += input/sec_input/synaptics/
 obj-y += battery/common/
