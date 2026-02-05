@@ -17,6 +17,7 @@
 #include <scsi/scsi_dbg.h>
 #include <scsi/scsi_device.h>
 #include <linux/bitfield.h>
+#include <linux/delay.h>
 
 #include "ufs-qcom.h"
 
