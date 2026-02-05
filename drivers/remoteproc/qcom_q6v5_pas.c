@@ -1684,6 +1684,7 @@ static int adsp_init_clock(struct qcom_adsp *adsp)
 	return 0;
 }
 
+#if IS_ENABLED(CONFIG_SEC_SENSORS_SSC)
 static bool adsp_need_subsensor(struct device *dev)
 {
 	int upper_c2c_det = -1;
@@ -1707,6 +1708,7 @@ static bool adsp_need_subsensor(struct device *dev)
 
 	return ((gpio_level > 0) ? (false):(true));
 }
+#endif
 
 static int adsp_init_regulator(struct qcom_adsp *adsp)
 {
